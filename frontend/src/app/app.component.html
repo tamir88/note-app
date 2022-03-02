@@ -1,0 +1,196 @@
+<!-- <div>{{ appState$ | async | json }}</div> -->
+
+<div class="page-content container note-has-grid">
+    <ul class="nav nav-pills p-3 bg-white mb-3 rounded-pill align-items-center">
+        <li class="nav-item pointer">
+            <a class="pointer nav-link rounded-pill note-link d-flex align-items-center px-2 px-md-3 mr-0 mr-md-2" 
+            [class.active]="(filteredLevel$ | async) === Level.ALL">
+                <span (click)="filterNotes(Level.ALL)" class="d-none d-md-block">All Notes</span>
+            </a>
+        </li>
+        <li class="nav-item pointer">
+            <a (click)="filterNotes(Level.HIGH)" class="pointer nav-link rounded-pill note-link d-flex align-items-center px-2 px-md-3 mr-0 mr-md-2"
+            [class.active]="(filteredLevel$ | async) === Level.HIGH">
+              <span class="d-none d-md-block">
+                High <i class="point fa fa-circle ml-1 font-10" style="color: #ff505080;"></i>
+              </span></a>
+        </li>
+        <li class="nav-item pointer">
+            <a (click)="filterNotes(Level.MEDIUM)" class="pointer nav-link rounded-pill note-link d-flex align-items-center px-2 px-md-3 mr-0 mr-md-2"
+            [class.active]="(filteredLevel$ | async) === Level.MEDIUM"> 
+              <span class="d-none d-md-block">
+                Medium <i class="point fa fa-circle ml-1 font-10" style="color: #2cabe380;"></i>
+              </span></a>
+        </li>
+        <li class="nav-item pointer">
+            <a (click)="filterNotes(Level.LOW)" class="pointer nav-link rounded-pill note-link d-flex align-items-center px-2 px-md-3 mr-0 mr-md-2" 
+            [class.active]="(filteredLevel$ | async) === Level.LOW">
+               <span class="d-none d-md-block">
+                 Low <i class="point fa fa-circle ml-1 font-10" style="color: #2cd07e80;"></i>
+                </span></a>
+        </li>
+        <li class="nav-item ml-auto pointer">
+            <a class="pointer nav-link btn-primary rounded-pill d-flex align-items-center px-3" data-toggle="modal" data-target="#newNote"> 
+              <span class="d-none d-md-block font-14" style="color: white;">Add Note</span></a>
+        </li>
+    </ul>
+    <div class="tab-content bg-transparent">
+        <div id="note-full-container" class="note-has-grid row">
+          <ng-container *ngIf="(appState$ | async) as result" [ngSwitch]="result.dataState">
+            <ng-container *ngSwitchCase="DataState.LOADING">
+              <div  class="col-md-12 single-note-item text-center">
+                  <div class="spinner-border text-info" role="status"></div>
+              </div>
+            </ng-container>
+            <ng-container *ngSwitchCase="DataState.ERROR">
+              <div class="alert-danger">
+                {{ result.error }}
+              </div>
+            </ng-container>
+            <ng-container *ngSwitchCase="DataState.LOADED">
+              <div *ngFor="let note of result?.data?.notes" class="col-md-4 single-note-item" 
+                [ngClass]="[note.level === Level.HIGH ? 'note-important' : '',
+                            note.level === Level.MEDIUM ? 'note-social' : '',
+                            note.level === Level.LOW ? 'note-business' : '']">
+                  <div class="card card-body">
+                      <span class="side-stick"></span>
+                      <h5 class="note-title text-truncate w-75 mb-0">
+                       {{ note.title }}  <i class="point fa fa-circle ml-1 font-10"></i></h5>
+                      <p class="note-date font-12 text-muted">Since {{ note.createdAt | date: 'MMMM d, y, h:mm a' }}</p>
+                      <div class="note-content">
+                          <p class="note-inner-content text-muted">
+                            {{ note.description }}
+                          </p>
+                      </div>
+                      <div class="d-flex align-items-center">
+                          <span (click)="deleteNote(note.id)" class="mr-1 pointer">
+                            <i class="fa fa-trash remove-note">
+                            </i></span>
+                          <div class="ml-auto">
+                              <div class="category-selector btn-group">
+                                  <a (click)="selectNote(note)" class="pointer nav-link label-group p-0" role="button" aria-haspopup="true" aria-expanded="true">
+                                    <span class="mr-1"><i class="fa fa-edit remove-note"></i></span>
+                                  </a>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>           
+            </ng-container>
+          </ng-container>
+            
+        </div>
+    </div>
+  
+    <a id="editNoteButton" data-toggle="modal" data-target="#editNote"> 
+    </a>
+  
+    <!-- Add Note Modal -->
+    <div class="modal fade" id="newNote" tabindex="-1" role="dialog" aria-labelledby="addNoteoteModal" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content border-0">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title text-white">Add a Note</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="notes-box">
+                        <div class="notes-content">
+                            <form #noteForm="ngForm" (ngSubmit)="saveNote(noteForm)">
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <div class="note-title">
+                                            <label>Title</label>
+                                            <input name="title" ngModel required type="text" class="form-control" minlength="5" maxlength="255" placeholder="Title" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <div class="note-title">
+                                            <label>Priority</label>
+                                            <select class="custom-select" ngModel="HIGH" required name="level">
+                                              <option [value]="Level.HIGH">{{ Level.HIGH }}</option>
+                                              <option [value]="Level.MEDIUM">{{ Level.MEDIUM }}</option>
+                                              <option [value]="Level.LOW">{{ Level.LOW }}</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <div class="note-description">
+                                            <label>Description</label>
+                                            <textarea name="description" ngModel required class="form-control" minlength="10" maxlength="255" placeholder="Description" rows="3"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button class="btn btn-danger" id="closeModal" data-dismiss="modal">Discard</button>
+                                    <button type="submit" [disabled]="noteForm.invalid || (isLoading$ | async)" class="btn btn-info">
+                                      <i *ngIf="isLoading$ | async" class="fas fa-spinner fa-spin"></i>
+                                      <span *ngIf="isLoading$ | async">Saving...</span>
+                                      <span *ngIf="!(isLoading$ | async)">Save</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+  
+    <!-- Edit Note Modal -->
+    <div class="modal fade" id="editNote" tabindex="-1" role="dialog" aria-labelledby="editNoteoteModal" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content border-0">
+              <div class="modal-header bg-info text-white">
+                  <h5 class="modal-title text-white">Edit Note</h5>
+                  <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">×</span>
+                  </button>
+              </div>
+              <div class="modal-body">
+                  <div class="notes-box">
+                      <div class="notes-content">
+                          <form #editNoteForm="ngForm" (ngSubmit)="updateNote(editNoteForm.value)" *ngIf="(selectedNote$ | async) as selectedNote">
+                              <div class="row">
+                                  <div class="col-md-12 mb-3">
+                                      <div class="note-title">
+                                          <label>Title</label>
+                                          <input type="hidden" ngModel="{{ selectedNote.id }}" name="id" id="id">
+                                          <input ngModel="{{ selectedNote.title }}" name="title" required type="text" class="form-control" minlength="5" maxlength="255" placeholder="Title" />
+                                      </div>
+                                  </div>
+                                  <div class="col-md-12 mb-3">
+                                      <div class="note-title">
+                                          <label>Priority</label>
+                                          <select class="custom-select" ngModel="{{ selectedNote.level }}" required name="level">
+                                            <option [value]="Level.HIGH">{{ Level.HIGH }}</option>
+                                            <option [value]="Level.MEDIUM">{{ Level.MEDIUM }}</option>
+                                            <option [value]="Level.LOW">{{ Level.LOW }}</option>
+                                          </select>
+                                      </div>
+                                  </div>
+                                  <div class="col-md-12">
+                                      <div class="note-description">
+                                          <label>Description</label>
+                                          <textarea ngModel="{{ selectedNote.description }}" name="description" required class="form-control" minlength="10" maxlength="255" placeholder="Description" rows="3"></textarea>
+                                      </div>
+                                  </div>
+                              </div>
+                              <div class="modal-footer">
+                                  <button class="btn btn-danger" id="closeModalEdit" data-dismiss="modal">Discard</button>
+                                  <button type="submit" [disabled]="editNoteForm.invalid || (isLoading$ | async)" class="btn btn-info">
+                                    <i *ngIf="isLoading$ | async" class="fas fa-spinner fa-spin"></i>
+                                    <span *ngIf="isLoading$ | async">Saving...</span>
+                                    <span *ngIf="!(isLoading$ | async)">Save</span>
+                                  </button>
+                              </div>
+                          </form>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </div>
+  </div>
